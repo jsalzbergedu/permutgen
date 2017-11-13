@@ -1,0 +1,62 @@
+# The syntax for creating an element is:
+#
+# element [name] [number-of-electrons] [number-of-bonds]
+#
+# where [..] denotes that .. is optional
+# and where the number of bonds is on the outside electrons, not the center one.
+#
+# An empty application of element, i.e., element
+# denotes an empty slot in the lewis structure.
+#
+# All lines that do not begin with the word element are ignored.
+#
+# So for instance, oxygen as a center element
+#
+# element O 6
+#
+# Or oxygen as a outside element with two bonds
+# 
+# element O 6 2
+#
+# The elements are ordered as follows:
+# Center, top, bottom, left, and right. 
+# 
+# Example
+#
+#
+#             Top
+#              |
+#       Left-Center-Right
+#              |
+#            Bottom
+# 
+# Applying this layout to H20
+#
+#             None
+#              |
+#            H-O-H
+#              |
+#             None
+#
+# Which gets encoded as
+#
+# element
+# element
+# element H 1 1
+# element H 1 1
+# element O 6
+#
+
+# O=C=O :
+element C 4
+element
+element
+element O 6 2
+element O 6 2
+
+# H-O-H
+element O 6
+element
+element
+element H 1 2
+element H 1 2
