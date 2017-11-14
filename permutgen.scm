@@ -1,6 +1,5 @@
 ;; This creates a lewis structure object with slots for top, bot, left, right, and center
 (require-extension coops)
-(require-extension coops-primitive-objects)
 (require-extension srfi-13)
 (require-extension irregex)
 (use parley)
