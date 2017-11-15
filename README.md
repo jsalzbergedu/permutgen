@@ -4,7 +4,7 @@ FEDD group level generator for a scratch project.
 
 The goal of this is to shore up the weaknesses of scratch, namely
 scratch's inability to organize data, with an external program that
-can do just that. All the scratch game has to do is go from the initial
+organizes data well. All the scratch game has to do is go from the initial
 states to the final states in part of one long list. Permutgen does 
 the work of generating these states.
 
