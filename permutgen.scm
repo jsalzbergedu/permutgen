@@ -421,14 +421,13 @@
       ""
       (foldr string-append "" (map (lambda (n) (string-append (number->string n) "\n")) lst))))
 
-;; (make lewis-base 'element-some (element "C" 4) 'element-top (element) 'element-bot (element) 'element-rig (element "O" 6 2) 'element-lef (element "O" 6 2)))))
-
 (define (make-level lewis-base)
   (string-append "#This level's element initlist begins\n"
 		 (gen-layout-string lewis-base)
 		 "~~~\n"
 		 "#This level's permutations of electron combinations begins\n"
 		 (nlist->ret-sep-list (permutgen-first-level lewis-base))
+		 "\n"
 		 "~~~\n"
 		 "#This level's list of vertical bonds begins\n"
 		 (nlist->ret-sep-list (gen-verts mock))
@@ -437,14 +436,9 @@
 (define (get-level-file file)
   (call-with-input-file file (lambda (in) (read-lines in))))
 
-(define-syntax whenf
-  (syntax-rules ()
-    ((_ pred condition)
-     (if pred condition #f))))
-
 (define (parse-line-of-input-file line)
-  (whenf (>= (string-length line) 7)
-	 (whenf (string= (substring line 0 7) "element")
+  (and (>= (string-length line) 7)
+	 (and (string= (substring line 0 7) "element")
 		(let ((split (irregex-split " " line)))
 		  (cond ((= 4 (length split))
 			 (element (cadr split) (string->number (caddr split))
@@ -452,10 +446,8 @@
 			((= 3 (length split))
 			 (element (cadr split) (string->number (caddr split))))
 			((= 1 (length split))
-			 (element)))))))
-
-#;(define (make-lewis-base cen top bot lef rig)
-  (make lewis-base 'element-some cen 'element-top top 'element-bot bot 'element-lef lef 'element-rig rig))
+			 (element))
+			(else #f))))))
 
 (define make-lewis-base-curried
   (lambda (cen) (lambda (top) (lambda (bot) (lambda (lef) (lambda (rig)
@@ -478,10 +470,6 @@
 	    (reverse (cons proc acc))
 	    (r-t-l lns make-lewis-base-curried (cons proc acc))))))
 
-#;(define mock (lewis-base-ligands-with-distance->lewis-base-ligands-enumerated
-	      (lewis-base-ligands->lewis-base-ligands-with-distance
-	       (make lewis-base 'element-some (element "C" 4) 'element-top (element) 'element-bot (element) 'element-rig (element "O" 6 2) 'element-lef (element "O" 6 2)))))
-
 (define (lewis-base->level lewis-base)
   (make-level
    (lewis-base-ligands-with-distance->lewis-base-ligands-enumerated
@@ -491,8 +479,12 @@
 (define (lewis-base-list->levels lst)
   (foldr string-append "" (map lewis-base->level lst)))
 
+(define file->levels file
+  (lines->lewis-base-list (get-level-file file)))
+
 (unless (irregex-search "csi" (car (argv)))
-  (define infile (parley "Input file name?"))
-  (define outfile (parley "Output file name?"))
+  (define infile (parley "Input file name: "))
+  (define outfile (parley "Output file name: "))
+  (delete-file outfile)
   (define level (lewis-base-list->levels (lines->lewis-base-list (get-level-file infile))))
   (with-output-to-file outfile (lambda () (display level))))

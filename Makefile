@@ -1,5 +1,4 @@
 all:
 	csc -O3 permutgen.scm
-windows:
-	csc
-	csc -deploy 
+debug:
+	csc -t permutgen.scm
