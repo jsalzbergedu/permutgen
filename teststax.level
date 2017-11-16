@@ -47,6 +47,13 @@
 # element O 6
 #
 
+# Carbon Monoide (for interactive instructions, please do not remove)
+element C 4
+element
+element
+element
+element O 6 3
+
 # O=C=O :
 element C 4
 element

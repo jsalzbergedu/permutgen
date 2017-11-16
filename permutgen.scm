@@ -3,7 +3,6 @@
 (require-extension srfi-13)
 (require-extension irregex)
 (use parley)
-
 (define-class element-some-base ()
   ((element-name reader: get-element-name)
    (number-of-dots reader: get-number-of-dots)))
@@ -144,7 +143,8 @@
   (etop-enumerated reader: get-etop-enumerated)
   (ebot-enumerated reader: get-ebot-enumerated)
   (elef-enumerated reader: get-elef-enumerated)
-  (erig-enumerated reader: get-erig-enumerated)))
+  (erig-enumerated reader: get-erig-enumerated)
+  (element-enumerated reader: get-element-enumerated)))
 
 (define-method (get-element-ligand (obj element-with-distance-enumerated))
   (get-element-ligand (get-element-with-distance obj)))
@@ -176,10 +176,11 @@
 (define-method (get-nbonds (obj element-with-distance-enumerated))
 			   (get-nbonds (get-element-with-distance obj)))
 
-(define (make-element-with-distance-enumerated element-with-distance etop-enumerated ebot-enumerated elef-enumerated erig-enumerated)
+(define (make-element-with-distance-enumerated element-with-distance etop-enumerated ebot-enumerated elef-enumerated erig-enumerated element-enumerated)
   (make element-with-distance-enumerated 'element-with-distance element-with-distance
 	'etop-enumerated etop-enumerated 'ebot-enumerated ebot-enumerated
-	'elef-enumerated elef-enumerated 'erig-enumerated erig-enumerated))
+	'elef-enumerated elef-enumerated 'erig-enumerated erig-enumerated
+	'element-enumerated element-enumerated))
 
 (define (delpair-based-on-pair pair-bool pair-two)
   (let ((tag (gensym)))
@@ -232,8 +233,9 @@
        (let ((t (delpair-based-on-pair (get-etop element-with-distance) (car lst)))
 	     (r (delpair-based-on-pair (get-erig element-with-distance) (cadr lst)))
 	     (b (delpair-based-on-pair (get-ebot element-with-distance) (caddr lst)))
-	     (l (delpair-based-on-pair (get-elef element-with-distance) (cadddr lst))))
-	 (some (make-element-with-distance-enumerated element-with-distance t b l r)))))
+	     (l (delpair-based-on-pair (get-elef element-with-distance) (cadddr lst)))
+	     (e-e (car (cddddr lst))))
+	 (some (make-element-with-distance-enumerated element-with-distance t b l r e-e)))))
    (lambda () (lambda (some none) (none)))))
 
 (define-class element-some-enumerated ()
@@ -241,7 +243,8 @@
   (etop-enumerated reader: get-etop-enumerated)
   (ebot-enumerated reader: get-ebot-enumerated)
   (elef-enumerated reader: get-elef-enumerated)
-  (erig-enumerated reader: get-erig-enumerated)))
+  (erig-enumerated reader: get-erig-enumerated)
+  (element-enumerated reader: get-element-enumerated)))
 
 (define-method (get-element-name (obj element-some-enumerated))
   (get-element-name (get-element-some obj)))
@@ -262,21 +265,25 @@
   (get-erig (get-element-some obj)))
 
 (define (make-element-some-enumerated element-some etop-enumerated
-				      ebot-enumerated elef-enumerated erig-enumerated)
+				      ebot-enumerated elef-enumerated erig-enumerated
+				      element-enumerated)
   (make element-some-enumerated 'element-some element-some
 	'etop-enumerated etop-enumerated 'ebot-enumerated ebot-enumerated
-	'elef-enumerated elef-enumerated 'erig-enumerated erig-enumerated))
+	'elef-enumerated elef-enumerated 'erig-enumerated erig-enumerated
+	'element-enumerated element-enumerated))
 
 (define (element-some->element-some-enumerated element-some lst)
   (element-some
    (lambda (element-some-some)
      (lambda (some none)
-       (let ((t (delpair-based-on-pair (get-etop element-some-some) (car lst)))
-	     (r (delpair-based-on-pair (get-erig element-some-some) (cadr lst)))
-	     (b (delpair-based-on-pair (get-ebot element-some-some) (caddr lst)))
-	     (l (delpair-based-on-pair (get-elef element-some-some) (cadddr lst))))
-	 (some (make-element-some-enumerated element-some-some t b l r)))))
-   (lambda () (lambda (some none) (none)))))
+       (let ((fst (car lst)) (snd (cdr lst)))
+	 (let ((t (delpair-based-on-pair (get-etop element-some-some) (car fst)))
+	       (r (delpair-based-on-pair (get-erig element-some-some) (cadr fst)))
+	       (b (delpair-based-on-pair (get-ebot element-some-some) (caddr fst)))
+	       (l (delpair-based-on-pair (get-elef element-some-some) (cadddr fst)))
+	       (e-e (car snd)))
+	   (some (make-element-some-enumerated element-some-some t b l r e-e))))))
+     (lambda () (lambda (some none) (none)))))
 
 (define (lewis-base-ligands-with-distance->lewis-base-ligands-enumerated lewis-base)
   (let ((cen (get-element-some lewis-base))
@@ -293,11 +300,17 @@
 	   (bot-enumerated (enumerate-electrons rig-offset))
 	   (bot-offset (bot (lambda (some) (+ 1 (get-number-of-dots some) rig-offset)) (lambda () rig-offset)))
 	   (lef-enumerated (enumerate-electrons bot-offset))
-	   (cen-decorated (element-some->element-some-enumerated cen cen-enumerated))
-	   (top-decorated (element-with-distance->element-with-distance-enumerated top top-enumerated))
-	   (rig-decorated (element-with-distance->element-with-distance-enumerated rig rig-enumerated))
-	   (bot-decorated (element-with-distance->element-with-distance-enumerated bot bot-enumerated))
-	   (lef-decorated (element-with-distance->element-with-distance-enumerated lef lef-enumerated)))
+	   (lef-offset (lef (lambda (some) (+ 1 (get-number-of-dots some) bot-offset)) (lambda () bot-offset)))
+	   (cen-appended (list cen-enumerated cen-offset))
+	   (top-appended (list top-enumerated top-offset))
+	   (bot-appended (list bot-enumerated bot-offset))
+	   (lef-appended (list lef-enumerated lef-offset))
+	   (rig-appended (list rig-enumerated rig-offset))
+	   (cen-decorated (element-some->element-some-enumerated cen cen-appended))
+	   (top-decorated (element-with-distance->element-with-distance-enumerated top top-appended))
+	   (rig-decorated (element-with-distance->element-with-distance-enumerated rig rig-appended))
+	   (bot-decorated (element-with-distance->element-with-distance-enumerated bot bot-appended))
+	   (lef-decorated (element-with-distance->element-with-distance-enumerated lef lef-appended)))
       (make-lewis-base cen-decorated top-decorated bot-decorated lef-decorated rig-decorated))))
 
 ;; Mock object
@@ -399,6 +412,70 @@
 			   (if (and rig-senders cen-rig-enumerated)
 			       (each-sender-to-receiver rig-senders cen-rig-enumerated) '()))))))))
 
+(define (nil-unless-positive x n)
+  (if (positive? n)
+      x
+      '()))
+
+(define (list-four-n-times a an b bn c cn d dn)
+  (let l-f-n-t ((an an) (bn bn) (cn cn) (dn dn) (acc '()))
+    (let ((pred
+	   (or (positive? an) (positive? bn) (positive? cn) (positive? dn))))
+      (if pred
+	  (l-f-n-t (- an 1) (- bn 1) (- cn 1) (- dn 1)
+		   (cons (flatten (list (nil-unless-positive a an)
+					(nil-unless-positive b bn)
+					(nil-unless-positive c cn)
+					(nil-unless-positive d dn)))
+			 acc))
+	  (filter (lambda (x) (not (null? x))) (reverse acc))))))
+
+(define list-four-n-times-2ary
+  (lambda (a an) (lambda (b bn) (lambda (c cn) (lambda (d dn) (list-four-n-times a an b bn c cn d dn))))))
+
+(define (permutgen-levels-intermed lewis-base)
+  (let ((cen (get-element-some lewis-base))
+	(top (get-element-top lewis-base))
+	(bot (get-element-bot lewis-base))
+	(lef (get-element-lef lewis-base))
+	(rig (get-element-rig lewis-base)))
+    (let ((top-nbonds (top (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (bot-nbonds (bot (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (lef-nbonds (lef (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (rig-nbonds (rig (lambda (some) (get-nbonds some)) (lambda () #f))))
+      (let ((top-senders (if top-nbonds (getall-electron-numbers-element-some top) #f))
+	    (bot-senders (if bot-nbonds (getall-electron-numbers-element-some bot) #f))
+	    (lef-senders (if lef-nbonds (getall-electron-numbers-element-some lef) #f))
+	    (rig-senders (if rig-nbonds (getall-electron-numbers-element-some rig) #f))
+	    (cen-revievers (getall-electron-numbers-element-some cen)))
+	  (let ((cen-top-enumerated (unwrap-enumerated-electrons cen top-dir))
+		(cen-bot-enumerated (unwrap-enumerated-electrons cen bot-dir))
+		(cen-lef-enumerated (unwrap-enumerated-electrons cen lef-dir))
+		(cen-rig-enumerated (unwrap-enumerated-electrons cen rig-dir)))
+	    (list 
+	     (if (and top-senders cen-top-enumerated)
+		 (list (each-sender-to-receiver top-senders cen-top-enumerated) top-nbonds)
+		 (list '() 0))
+	     (if (and bot-senders cen-bot-enumerated)
+		 (list (each-sender-to-receiver bot-senders cen-bot-enumerated) bot-nbonds)
+		 (list '() 0))
+	     (if (and lef-senders cen-lef-enumerated)
+		 (list (each-sender-to-receiver lef-senders cen-lef-enumerated) lef-nbonds)
+		 (list '() 0))
+	     (if (and rig-senders cen-rig-enumerated)
+		 (list (each-sender-to-receiver rig-senders cen-rig-enumerated) rig-nbonds)
+		 (list '() 0))))))))
+
+#;(define list-four-n-times-curried
+  (lambda (a) (lambda (an) (lambda (b) (lambda (bn) (lambda (c) (lambda (cn) (lambda (d) (lambda (dn)
+							(list-four-n-times a an b bn c cn d dn))))))))))
+(define (permutgen-levels lewis-base)
+  (let p-l ((intermed-list (permutgen-levels-intermed lewis-base)) (proc list-four-n-times-2ary))
+    (if (null? intermed-list)
+	proc
+	(let ((current-pair (car intermed-list)))
+	  (p-l (cdr intermed-list) (proc (car current-pair) (cadr current-pair)))))))
+
 (define (gen-verts lewis-base)
   (let ((cen (get-element-some lewis-base))
 	(top (get-element-top lewis-base))
@@ -416,22 +493,62 @@
 			       (each-sender-to-receiver bot-top-enumerated cen-top-enumerated))
 			 '()))))))
 
+(define (gen-target-nbonds lewis-base)
+  (let ((cen (get-element-some lewis-base))
+	(top (get-element-top lewis-base))
+	(bot (get-element-bot lewis-base))
+	(lef (get-element-lef lewis-base))
+	(rig (get-element-rig lewis-base)))
+    (let* ((cen-element-num (get-element-enumerated (unwrap cen)))
+	  (top-element-num (top (lambda (some) (get-element-enumerated some)) (lambda () #f)))
+	  (bot-element-num (bot (lambda (some) (get-element-enumerated some)) (lambda () #f)))
+	  (lef-element-num (lef (lambda (some) (get-element-enumerated some)) (lambda () #f)))
+	  (rig-element-num (rig (lambda (some) (get-element-enumerated some)) (lambda () #f)))
+	  (top-element-nbonds (top (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (bot-element-nbonds (bot (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (lef-element-nbonds (lef (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (rig-element-nbonds (rig (lambda (some) (get-nbonds some)) (lambda () #f)))
+	  (list-partial (lambda (fst . rest) (apply list cen-element-num fst rest))))
+      (filter (lambda (x) (not (null? x)))
+	      (list
+	       (if top-element-num
+		   (list-partial top-element-num top-element-nbonds)
+		   '())
+	       (if bot-element-num
+		   (list-partial bot-element-num bot-element-nbonds)
+		   '())
+	       (if lef-element-num
+		   (list-partial lef-element-num lef-element-nbonds)
+		   '())
+	       (if rig-element-num
+		   (list-partial rig-element-num rig-element-nbonds)
+		   '()))))))
+
 (define (nlist->ret-sep-list lst)
   (if (null? lst)
       ""
       (foldr string-append "" (map (lambda (n) (string-append (number->string n) "\n")) lst))))
 
+(define (nlists->ret-sep-list lst)
+  (if (null? lst)
+      ""
+      (foldr string-append ""
+	     (map (lambda (str) (string-append str "\n"))
+		  (map (lambda (lst)
+			 (nlist->ret-sep-list lst)) lst)))))
+
+
 (define (make-level lewis-base)
-  (string-append "#This level's element initlist begins\n"
+  (string-append "# This level's element initlist begins\n"
 		 (gen-layout-string lewis-base)
 		 "~~~\n"
-		 "#This level's permutations of electron combinations begins\n"
-		 (nlist->ret-sep-list (permutgen-first-level lewis-base))
-		 "\n"
+		 "# This level's permutations of electron combinations begins\n"
+		 (nlists->ret-sep-list (permutgen-levels lewis-base))
 		 "~~~\n"
-		 "#This level's list of vertical bonds begins\n"
-		 (nlist->ret-sep-list (gen-verts mock))
-		 "~~~\n"))
+		 "# This level's list of vertical bonds begins\n"
+		 (nlist->ret-sep-list (gen-verts lewis-base))
+		 "~~~\n"
+		 "# This level's list of the target number of bonds begins"))
 
 (define (get-level-file file)
   (call-with-input-file file (lambda (in) (read-lines in))))
@@ -479,12 +596,22 @@
 (define (lewis-base-list->levels lst)
   (foldr string-append "" (map lewis-base->level lst)))
 
-(define file->levels file
-  (lines->lewis-base-list (get-level-file file)))
+(define (file->levels file)
+  (lewis-base-list->levels (lines->lewis-base-list (get-level-file file))))
+
+(define (get-argv-fst-snd)
+  (and (= (length (argv)) 3)
+       (list (cadr (argv)) (caddr (argv)))))
 
 (unless (irregex-search "csi" (car (argv)))
-  (define infile (parley "Input file name: "))
-  (define outfile (parley "Output file name: "))
-  (delete-file outfile)
-  (define level (lewis-base-list->levels (lines->lewis-base-list (get-level-file infile))))
+  (define argv-fst-snd (get-argv-fst-snd))
+  (define infile (if argv-fst-snd
+		     (car argv-fst-snd)
+		     (parley "Input file name: ")))
+  (define outfile (if argv-fst-snd
+		      (cadr argv-fst-snd)
+		      (parley "Output file name: ")))
+  (when (file-exists? outfile)
+    (delete-file outfile))
+  (define level (file->levels infile))
   (with-output-to-file outfile (lambda () (display level))))
