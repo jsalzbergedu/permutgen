@@ -40,19 +40,19 @@
 #
 # Which gets encoded as
 #
-# element
-# element
-# element H 1 1
-# element H 1 1
 # element O 6
+# element
+# element
+# element H 1 1
+# element H 1 1
 #
 
-# Carbon Monoide (for interactive instructions, please do not remove)
-element C 4
+# N2 (for interactive instructions, please do not remove)
+element N 5
 element
 element
 element
-element O 6 3
+element N 5 3
 
 # O=C=O :
 element C 4
@@ -67,3 +67,31 @@ element
 element
 element H 1 2
 element H 1 2
+
+# NH3
+element N 5
+element
+element H 1 1
+element H 1 1
+element H 1 1
+
+# CH4
+element C 4
+element H 1 1
+element H 1 1
+element H 1 1
+element H 1 1
+
+# BF3
+element B 3
+element F 7 1
+element F 7 1
+element
+element F 7 1
+
+# CH2O
+element C 4
+element O 6 2
+element
+element H 1 1
+element H 1 1
