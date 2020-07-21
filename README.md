@@ -1,6 +1,6 @@
 # Permutgen
 
-FEDD group level generator for a scratch project.
+[FEDD](https://github.com/jsalzbergedu/FEDD2017.git) group level generator for a scratch project.
 
 The goal of this is to shore up the weaknesses of scratch, namely
 scratch's inability to organize data, with an external program that
